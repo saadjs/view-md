@@ -83,6 +83,17 @@ targets:
       path: ViewMDQuickLook/ViewMDQuickLook.entitlements
     info:
       path: ViewMDQuickLook/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewViewController
+          NSExtensionAttributes:
+            QLIsDataBasedPreview: false
+            QLSupportedContentTypes:
+              - net.daringfireball.markdown
+            QLSupportsSearchableItems: false
     settings:
       base:
         ENABLE_APP_SANDBOX: YES
