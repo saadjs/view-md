@@ -36,11 +36,9 @@ xcodebuild -scheme ViewMD -destination 'platform=macOS' build test
 
 ## Release
 
-`scripts/release.sh` archives, signs with Developer ID, notarizes the app and DMG, and prints the SHA256 of the final artifact:
-
 ```sh
-scripts/release.sh 0.1.0
-gh release create v0.1.0 build/release/ViewMD-0.1.0.dmg --title "v0.1.0"
+scripts/release.sh <version>
+gh release create v<version> build/release/ViewMD-<version>.dmg --title "v<version>" --notes "..."
 ```
 
 Publishing the release triggers `.github/workflows/update-homebrew-tap.yml`, which updates the cask in [`saadjs/homebrew-tap`](https://github.com/saadjs/homebrew-tap).
