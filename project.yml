@@ -1,0 +1,121 @@
+name: ViewMD
+
+options:
+  bundleIdPrefix: sh.saad
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  swift-markdown:
+    url: https://github.com/swiftlang/swift-markdown.git
+    from: 0.7.3
+
+settings:
+  base:
+    CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
+    CURRENT_PROJECT_VERSION: 1
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    MARKETING_VERSION: 0.1.0
+    SWIFT_VERSION: 6.0
+
+targets:
+  ViewMD:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: ViewMD/App
+    dependencies:
+      - target: ViewMDCore
+      - target: ViewMDQuickLook
+        embed: true
+    entitlements:
+      path: ViewMD/ViewMD.entitlements
+    info:
+      path: ViewMD/Info.plist
+      properties:
+        CFBundleDisplayName: ViewMD
+        CFBundleName: ViewMD
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: Copyright © 2026 Saad. All rights reserved.
+    settings:
+      base:
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_USER_SELECTED_FILES: readonly
+        PRODUCT_BUNDLE_IDENTIFIER: sh.saad.view-md
+
+  ViewMDCore:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/ViewMDCore
+    dependencies:
+      - package: swift-markdown
+        product: Markdown
+    info:
+      path: Sources/ViewMDCore/Info.plist
+      properties:
+        CFBundleName: ViewMDCore
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+    settings:
+      base:
+        DEFINES_MODULE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: sh.saad.view-md.core
+        SKIP_INSTALL: YES
+
+  ViewMDQuickLook:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: ViewMDQuickLook
+    dependencies:
+      - target: ViewMDCore
+        embed: true
+    entitlements:
+      path: ViewMDQuickLook/ViewMDQuickLook.entitlements
+    info:
+      path: ViewMDQuickLook/Info.plist
+    settings:
+      base:
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_USER_SELECTED_FILES: readonly
+        PRODUCT_BUNDLE_IDENTIFIER: sh.saad.view-md.quicklook
+        SKIP_INSTALL: YES
+
+  ViewMDTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/ViewMDTests
+    dependencies:
+      - target: ViewMDCore
+    info:
+      path: Tests/ViewMDTests/Info.plist
+      properties:
+        CFBundleName: ViewMDTests
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: sh.saad.view-md.tests
+
+schemes:
+  ViewMD:
+    build:
+      targets:
+        ViewMD: all
+        ViewMDQuickLook: all
+        ViewMDTests: [test]
+    test:
+      targets:
+        - ViewMDTests
+      gatherCoverageData: true

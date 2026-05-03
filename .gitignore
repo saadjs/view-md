@@ -1,0 +1,18 @@
+.DS_Store
+
+# Xcode
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+*.xccheckout
+*.xcuserdatad/
+xcuserdata/
+
+# SwiftPM / build output
+.build/
+
+# Local environment
+.env
+.env.*
+!.env.example
