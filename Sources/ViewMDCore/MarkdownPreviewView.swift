@@ -25,6 +25,7 @@ public struct MarkdownPreviewView: View {
             .padding(.vertical, 28)
         }
         .background(Color(nsColor: .textBackgroundColor))
+        .preferredColorScheme(nil)
     }
 
     private func blockView(_ block: MarkdownBlock) -> AnyView {

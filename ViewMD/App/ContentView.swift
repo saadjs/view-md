@@ -28,6 +28,7 @@ struct ContentView: View {
             }
         }
         .navigationTitle(document?.displayName ?? "ViewMD")
+        .preferredColorScheme(nil)
         .onReceive(NotificationCenter.default.publisher(for: .viewMDOpenDocument)) { _ in
             openDocument()
         }
