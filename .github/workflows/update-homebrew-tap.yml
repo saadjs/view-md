@@ -1,0 +1,81 @@
+name: Update Homebrew tap
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.1.0)"
+        required: true
+
+jobs:
+  update-cask:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ github.event.release.tag_name }}" ]]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="${{ inputs.tag }}"
+          fi
+          version="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Download DMG and compute SHA256
+        id: asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          asset="ViewMD-${VERSION}.dmg"
+          url="https://github.com/${REPO}/releases/download/${TAG}/${asset}"
+          curl -fsSL --retry 5 --retry-delay 5 -o "$asset" "$url"
+          sha=$(sha256sum "$asset" | awk '{print $1}')
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: saadjs/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update cask
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+          SHA256: ${{ steps.asset.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          cask="homebrew-tap/Casks/view-md.rb"
+          test -f "$cask"
+          # Update version line
+          perl -i -pe 's/^(\s*version\s+)"[^"]*"/$1"'"$VERSION"'"/' "$cask"
+          # Replace `sha256 :no_check` or any existing sha256 "..." with the new value
+          perl -i -pe 's/^(\s*sha256\s+)(:no_check|"[^"]*")/$1"'"$SHA256"'"/' "$cask"
+          echo "--- updated cask ---"
+          cat "$cask"
+
+      - name: Commit and push
+        working-directory: homebrew-tap
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet Casks/view-md.rb; then
+            echo "Cask already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/view-md.rb
+          git commit -m "view-md: update to ${VERSION}"
+          git push
