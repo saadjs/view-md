@@ -2,6 +2,10 @@
 
 A native macOS Markdown viewer with a Quick Look preview extension. Open `.md` files in a SwiftUI app, or hit space in Finder for a preview.
 
+![ViewMD rendering its README](docs/screenshots/rendered.png)
+
+![ViewMD empty state](docs/screenshots/empty-state.png)
+
 ## Install
 
 Via [Homebrew](https://brew.sh):
