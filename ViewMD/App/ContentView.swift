@@ -31,6 +31,19 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .viewMDOpenDocument)) { _ in
             openDocument()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .viewMDOpenURLs)) { notification in
+            guard let urls = notification.object as? [URL] else {
+                return
+            }
+            openFirstDocument(from: urls)
+            ExternalDocumentOpenRelay.clearPendingURLs()
+        }
+        .onAppear {
+            openFirstDocument(from: ExternalDocumentOpenRelay.consumePendingURLs())
+        }
+        .onOpenURL { url in
+            loadDocument(at: url)
+        }
         .alert(
             "Could not open Markdown",
             isPresented: Binding(
@@ -60,8 +73,20 @@ struct ContentView: View {
             return
         }
 
+        loadDocument(at: url)
+    }
+
+    private func openFirstDocument(from urls: [URL]) {
+        guard let url = urls.first else {
+            return
+        }
+        loadDocument(at: url)
+    }
+
+    private func loadDocument(at url: URL) {
         do {
             document = try loader.load(from: url)
+            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }

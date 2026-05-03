@@ -41,6 +41,17 @@ targets:
         CFBundleName: ViewMD
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Markdown Document
+            CFBundleTypeRole: Viewer
+            CFBundleTypeExtensions:
+              - md
+              - markdown
+              - mdown
+              - mkd
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - net.daringfireball.markdown
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: Copyright © 2026 Saad. All rights reserved.
     settings:
