@@ -83,7 +83,10 @@ public struct MarkdownPreviewView: View {
 
     @ViewBuilder
     private func imageView(source: String, alt: String) -> some View {
-        RemoteImageView(url: URL(string: source), alt: alt)
+        RemoteImageView(
+            url: MarkdownImageURLResolver.resolve(source: source, documentURL: document.sourceURL),
+            alt: alt
+        )
     }
 
     private func listView(items: [MarkdownListItem], orderedStart: UInt?) -> some View {

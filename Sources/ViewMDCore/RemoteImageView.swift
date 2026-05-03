@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import WebKit
 
@@ -42,6 +43,15 @@ struct RemoteImageView: View {
                 .frame(width: size.width, height: size.height)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityLabel(alt)
+        case .needsFolderAccess(let folderURL):
+            VStack(alignment: .leading, spacing: 8) {
+                Text(alt.isEmpty ? (url?.lastPathComponent ?? "Local image") : alt)
+                    .foregroundStyle(.secondary)
+                Button("Grant Folder Access") {
+                    requestAccess(to: folderURL)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         case .failed:
             Text(alt.isEmpty ? (url?.absoluteString ?? "Image") : alt)
                 .foregroundStyle(.secondary)
@@ -63,8 +73,7 @@ struct RemoteImageView: View {
             return
         }
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            let mime = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type")?.lowercased() ?? ""
+            let (data, mime) = try await loadData(from: url)
             let isSVG = mime.contains("svg")
                 || url.pathExtension.lowercased() == "svg"
                 || RemoteImageView.looksLikeSVG(data)
@@ -77,7 +86,39 @@ struct RemoteImageView: View {
                 loaded = .failed
             }
         } catch {
-            loaded = .failed
+            loaded = url.isFileURL ? .needsFolderAccess(url.deletingLastPathComponent()) : .failed
+        }
+    }
+
+    private func loadData(from url: URL) async throws -> (Data, String) {
+        if url.isFileURL {
+            return (try LocalImageAccess.readData(from: url), "")
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        let mime = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type")?.lowercased() ?? ""
+        return (data, mime)
+    }
+
+    private func requestAccess(to folderURL: URL) {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.directoryURL = folderURL
+        panel.message = "Grant ViewMD access to this image folder."
+        panel.prompt = "Grant Access"
+
+        panel.begin { response in
+            guard response == .OK, let grantedURL = panel.url else {
+                return
+            }
+            do {
+                try LocalImageAccess.saveBookmark(for: grantedURL)
+                Task { await load() }
+            } catch {
+                loaded = .failed
+            }
         }
     }
 
@@ -128,7 +169,61 @@ struct RemoteImageView: View {
         case pending
         case raster(NSImage)
         case svg(Data, CGSize)
+        case needsFolderAccess(URL)
         case failed
+    }
+}
+
+private enum LocalImageAccess {
+    private static let bookmarkPrefix = "SecurityScopedFolderBookmark:"
+
+    static func readData(from url: URL) throws -> Data {
+        try readDataWithSavedAccess(from: url) ?? Data(contentsOf: url)
+    }
+
+    static func saveBookmark(for folderURL: URL) throws {
+        let bookmark = try folderURL.bookmarkData(
+            options: .withSecurityScope,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+        UserDefaults.standard.set(bookmark, forKey: bookmarkKey(for: folderURL))
+    }
+
+    private static func readDataWithSavedAccess(from url: URL) throws -> Data? {
+        guard let bookmark = bookmarkData(for: url) ?? bookmarkData(for: url.deletingLastPathComponent()) else {
+            return nil
+        }
+
+        var isStale = false
+        let folderURL = try URL(
+            resolvingBookmarkData: bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+
+        guard !isStale else {
+            UserDefaults.standard.removeObject(forKey: bookmarkKey(for: folderURL))
+            return nil
+        }
+
+        let didStartAccessing = folderURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                folderURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        return try Data(contentsOf: url)
+    }
+
+    private static func bookmarkData(for url: URL) -> Data? {
+        UserDefaults.standard.data(forKey: bookmarkKey(for: url))
+    }
+
+    private static func bookmarkKey(for url: URL) -> String {
+        bookmarkPrefix + url.standardizedFileURL.path
     }
 }
 

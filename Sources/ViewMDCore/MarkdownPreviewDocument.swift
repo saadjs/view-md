@@ -52,3 +52,31 @@ public indirect enum MarkdownInline: Equatable, Sendable {
     case link(destination: String?, children: [MarkdownInline])
     case lineBreak
 }
+
+public enum MarkdownImageURLResolver {
+    public static func resolve(source: String, documentURL: URL?) -> URL? {
+        let trimmed = source.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        if let url = URL(string: trimmed), let scheme = url.scheme, !scheme.isEmpty {
+            return url
+        }
+
+        if trimmed.hasPrefix("/") {
+            return URL(fileURLWithPath: trimmed)
+        }
+
+        guard let documentURL else {
+            return URL(string: trimmed)
+        }
+
+        let baseURL = documentURL.deletingLastPathComponent()
+        if let url = URL(string: trimmed, relativeTo: baseURL) {
+            return url.absoluteURL
+        }
+
+        return URL(fileURLWithPath: trimmed, relativeTo: baseURL).absoluteURL
+    }
+}

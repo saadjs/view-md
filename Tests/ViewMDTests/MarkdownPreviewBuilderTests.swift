@@ -103,4 +103,74 @@ final class MarkdownPreviewBuilderTests: XCTestCase {
             return XCTFail("Expected paragraph block, got \(preview.blocks)")
         }
     }
+
+    func testResolvesRelativeImageURLAgainstMarkdownFile() {
+        let documentURL = URL(fileURLWithPath: "/Users/example/Docs/readme.md")
+        let resolved = MarkdownImageURLResolver.resolve(
+            source: "images/photo.png",
+            documentURL: documentURL
+        )
+
+        XCTAssertEqual(
+            resolved,
+            URL(fileURLWithPath: "/Users/example/Docs/images/photo.png")
+        )
+    }
+
+    func testResolvesRelativeImageURLWithSpaces() {
+        let documentURL = URL(fileURLWithPath: "/Users/example/Docs/readme.md")
+        let resolved = MarkdownImageURLResolver.resolve(
+            source: "images/photo one.png",
+            documentURL: documentURL
+        )
+
+        XCTAssertEqual(
+            resolved,
+            URL(fileURLWithPath: "/Users/example/Docs/images/photo one.png")
+        )
+    }
+
+    func testResolvesRelativeImageURLWithExistingEscapes() {
+        let documentURL = URL(fileURLWithPath: "/Users/example/Docs/readme.md")
+        let resolved = MarkdownImageURLResolver.resolve(
+            source: "images/photo%20one.png",
+            documentURL: documentURL
+        )
+
+        XCTAssertEqual(
+            resolved,
+            URL(fileURLWithPath: "/Users/example/Docs/images/photo one.png")
+        )
+    }
+
+    func testResolvesRelativeImageURLWithQuery() {
+        let documentURL = URL(fileURLWithPath: "/Users/example/Docs/readme.md")
+        let resolved = MarkdownImageURLResolver.resolve(
+            source: "images/photo.png?raw=1",
+            documentURL: documentURL
+        )
+
+        XCTAssertEqual(
+            resolved,
+            URL(string: "file:///Users/example/Docs/images/photo.png?raw=1")
+        )
+    }
+
+    func testKeepsRemoteImageURL() {
+        let resolved = MarkdownImageURLResolver.resolve(
+            source: "https://example.com/image.svg",
+            documentURL: URL(fileURLWithPath: "/Users/example/Docs/readme.md")
+        )
+
+        XCTAssertEqual(resolved, URL(string: "https://example.com/image.svg"))
+    }
+
+    func testResolvesAbsoluteImagePathAsFileURL() {
+        let resolved = MarkdownImageURLResolver.resolve(
+            source: "/Users/example/Images/photo.png",
+            documentURL: URL(fileURLWithPath: "/Users/example/Docs/readme.md")
+        )
+
+        XCTAssertEqual(resolved, URL(fileURLWithPath: "/Users/example/Images/photo.png"))
+    }
 }

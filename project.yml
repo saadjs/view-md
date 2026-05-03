@@ -36,6 +36,7 @@ targets:
     entitlements:
       path: ViewMD/ViewMD.entitlements
       properties:
+        com.apple.security.files.bookmarks.app-scope: true
         com.apple.security.network.client: true
     info:
       path: ViewMD/Info.plist
