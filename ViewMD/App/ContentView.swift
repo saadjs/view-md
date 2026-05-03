@@ -15,6 +15,10 @@ struct ContentView: View {
                 MarkdownPreviewView(document: document)
             } else {
                 VStack(spacing: 18) {
+                    Image("ViewMDIcon")
+                        .resizable()
+                        .frame(width: 84, height: 84)
+                        .accessibilityHidden(true)
                     Text("ViewMD")
                         .font(.title)
                         .fontWeight(.semibold)
