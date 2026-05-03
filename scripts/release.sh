@@ -19,6 +19,7 @@ SCHEME="ViewMD"
 APP_NAME="ViewMD"
 TEAM_ID="2ZPA772V9V"
 NOTARY_PROFILE="view-md-notary"
+DEVELOPER_ID_APPLICATION="${DEVELOPER_ID_APPLICATION:-Developer ID Application: Saad Bash ($TEAM_ID)}"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$REPO_ROOT/build/release"
@@ -33,6 +34,29 @@ EXPORT_OPTIONS="$BUILD_DIR/ExportOptions.plist"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
+verify_app_signature() {
+  local app_path="$1"
+
+  codesign --verify --strict --verbose=4 "$app_path"
+}
+
+verify_notarized_app() {
+  local app_path="$1"
+
+  verify_app_signature "$app_path"
+  xcrun stapler validate "$app_path"
+  spctl -a -vvv -t exec "$app_path"
+}
+
+verify_notarized_dmg() {
+  local dmg_path="$1"
+
+  codesign --verify --strict --verbose=4 "$dmg_path"
+  xcrun stapler validate "$dmg_path"
+  spctl -a -vvv -t open --context context:primary-signature "$dmg_path"
+  hdiutil verify "$dmg_path"
+}
+
 cat > "$EXPORT_OPTIONS" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -44,6 +68,8 @@ cat > "$EXPORT_OPTIONS" <<EOF
     <string>$TEAM_ID</string>
     <key>signingStyle</key>
     <string>automatic</string>
+    <key>signingCertificate</key>
+    <string>Developer ID Application</string>
 </dict>
 </plist>
 EOF
@@ -63,13 +89,18 @@ xcodebuild -exportArchive \
   -exportPath "$EXPORT_DIR" \
   -exportOptionsPlist "$EXPORT_OPTIONS"
 
+echo "==> Verifying exported app signature"
+verify_app_signature "$APP_PATH"
+
 echo "==> Notarizing app"
 ditto -c -k --keepParent "$APP_PATH" "$APP_ZIP"
 xcrun notarytool submit "$APP_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
 
 echo "==> Stapling app"
 xcrun stapler staple "$APP_PATH"
-xcrun stapler validate "$APP_PATH"
+
+echo "==> Verifying notarized app"
+verify_notarized_app "$APP_PATH"
 
 echo "==> Building DMG"
 mkdir -p "$DMG_STAGE"
@@ -81,12 +112,18 @@ hdiutil create \
   -ov -format UDZO \
   "$DMG_PATH"
 
+echo "==> Signing DMG"
+codesign --force --timestamp --sign "$DEVELOPER_ID_APPLICATION" "$DMG_PATH"
+codesign --verify --strict --verbose=4 "$DMG_PATH"
+
 echo "==> Notarizing DMG"
 xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
 
 echo "==> Stapling DMG"
 xcrun stapler staple "$DMG_PATH"
-xcrun stapler validate "$DMG_PATH"
+
+echo "==> Verifying notarized DMG"
+verify_notarized_dmg "$DMG_PATH"
 
 SHA256="$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')"
 
