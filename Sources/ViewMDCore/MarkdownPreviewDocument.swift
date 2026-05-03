@@ -41,6 +41,7 @@ public indirect enum MarkdownBlock: Equatable, Sendable {
     case blockQuote([MarkdownBlock])
     case codeBlock(language: String?, code: String)
     case horizontalRule
+    case image(source: String, alt: String)
 }
 
 public indirect enum MarkdownInline: Equatable, Sendable {

@@ -39,6 +39,9 @@ public struct MarkdownPreviewBuilder: Sendable {
         case let heading as Heading:
             return [.heading(level: heading.level, inlines: inlines(from: heading.children))]
         case let paragraph as Paragraph:
+            if let imageBlocks = imageBlocks(from: paragraph) {
+                return imageBlocks
+            }
             let content = inlines(from: paragraph.children)
             return content.isEmpty ? [] : [.paragraph(content)]
         case let unorderedList as UnorderedList:
@@ -57,6 +60,37 @@ public struct MarkdownPreviewBuilder: Sendable {
         default:
             return markup.children.flatMap { blocks(from: $0) }
         }
+    }
+
+    private func imageBlocks(from paragraph: Paragraph) -> [MarkdownBlock]? {
+        var result: [MarkdownBlock] = []
+        for child in paragraph.children {
+            switch child {
+            case let image as Markdown.Image:
+                guard let block = imageBlock(from: image) else { return nil }
+                result.append(block)
+            case let link as Markdown.Link:
+                let linkChildren = Array(link.children)
+                guard linkChildren.count == 1,
+                      let image = linkChildren.first as? Markdown.Image,
+                      let block = imageBlock(from: image) else {
+                    return nil
+                }
+                result.append(block)
+            case let text as Markdown.Text where text.string.trimmingCharacters(in: .whitespaces).isEmpty:
+                continue
+            case is SoftBreak, is LineBreak:
+                continue
+            default:
+                return nil
+            }
+        }
+        return result.isEmpty ? nil : result
+    }
+
+    private func imageBlock(from image: Markdown.Image) -> MarkdownBlock? {
+        guard let source = image.source, !source.isEmpty else { return nil }
+        return .image(source: source, alt: image.plainText)
     }
 
     private func listItem(from markup: Markup) -> MarkdownListItem? {

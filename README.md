@@ -20,6 +20,7 @@ Or download the latest `.dmg` from the [releases page](https://github.com/saadjs
 
 - Renders headings, lists, blockquotes, code blocks, and inline formatting (bold, italic, inline code).
 - Clickable links rendered as native `AttributedString` text.
+- Remote images (PNG/JPG/GIF/SVG) — including shields.io-style SVG badges.
 - Quick Look extension — preview Markdown files from Finder with the spacebar.
 - Sandboxed, hardened-runtime, notarized for direct distribution.
 - Requires macOS 14 or later.

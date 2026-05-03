@@ -19,7 +19,7 @@ settings:
     DEVELOPMENT_TEAM: 2ZPA772V9V
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
-    MARKETING_VERSION: 0.1.1
+    MARKETING_VERSION: 0.2.0
     SWIFT_VERSION: 6.0
 
 targets:
@@ -35,6 +35,8 @@ targets:
         embed: true
     entitlements:
       path: ViewMD/ViewMD.entitlements
+      properties:
+        com.apple.security.network.client: true
     info:
       path: ViewMD/Info.plist
       properties:
@@ -96,6 +98,8 @@ targets:
         embed: true
     entitlements:
       path: ViewMDQuickLook/ViewMDQuickLook.entitlements
+      properties:
+        com.apple.security.network.client: true
     info:
       path: ViewMDQuickLook/Info.plist
       properties:

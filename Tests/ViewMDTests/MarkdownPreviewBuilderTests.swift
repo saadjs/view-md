@@ -62,4 +62,45 @@ final class MarkdownPreviewBuilderTests: XCTestCase {
             .heading(level: 2, inlines: [.text("Parsed")])
         ])
     }
+
+    func testStandaloneImageBecomesImageBlock() {
+        let preview = MarkdownDocumentLoader().makePreviewDocument(
+            source: "![alt text](https://example.com/img.png)"
+        )
+
+        XCTAssertEqual(preview.blocks, [
+            .image(source: "https://example.com/img.png", alt: "alt text")
+        ])
+    }
+
+    func testLinkWrappedImageBecomesImageBlock() {
+        let preview = MarkdownDocumentLoader().makePreviewDocument(
+            source: "[![badge](https://example.com/badge.svg)](https://example.com)"
+        )
+
+        XCTAssertEqual(preview.blocks, [
+            .image(source: "https://example.com/badge.svg", alt: "badge")
+        ])
+    }
+
+    func testRowOfImagesProducesMultipleImageBlocks() {
+        let preview = MarkdownDocumentLoader().makePreviewDocument(
+            source: "![a](https://example.com/a.png) ![b](https://example.com/b.png)"
+        )
+
+        XCTAssertEqual(preview.blocks, [
+            .image(source: "https://example.com/a.png", alt: "a"),
+            .image(source: "https://example.com/b.png", alt: "b"),
+        ])
+    }
+
+    func testImageMixedWithTextStaysAsParagraph() {
+        let preview = MarkdownDocumentLoader().makePreviewDocument(
+            source: "Look at ![cat](https://example.com/cat.png) here"
+        )
+
+        guard case .paragraph? = preview.blocks.first else {
+            return XCTFail("Expected paragraph block, got \(preview.blocks)")
+        }
+    }
 }

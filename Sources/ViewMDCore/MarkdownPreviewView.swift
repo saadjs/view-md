@@ -76,7 +76,14 @@ public struct MarkdownPreviewView: View {
         case .horizontalRule:
             return AnyView(Divider()
                 .padding(.vertical, 6))
+        case .image(let source, let alt):
+            return AnyView(imageView(source: source, alt: alt))
         }
+    }
+
+    @ViewBuilder
+    private func imageView(source: String, alt: String) -> some View {
+        RemoteImageView(url: URL(string: source), alt: alt)
     }
 
     private func listView(items: [MarkdownListItem], orderedStart: UInt?) -> some View {
