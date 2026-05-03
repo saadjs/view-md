@@ -16,7 +16,8 @@ settings:
   base:
     CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
     CURRENT_PROJECT_VERSION: 1
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: 2ZPA772V9V
+    ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     MARKETING_VERSION: 0.1.0
     SWIFT_VERSION: 6.0
@@ -52,6 +53,8 @@ targets:
             LSHandlerRank: Alternate
             LSItemContentTypes:
               - net.daringfireball.markdown
+        ITSAppUsesNonExemptEncryption: false
+        LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: Copyright © 2026 Saad. All rights reserved.
     settings:
