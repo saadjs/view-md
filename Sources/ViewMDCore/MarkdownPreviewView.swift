@@ -121,28 +121,60 @@ public struct MarkdownPreviewView: View {
     }
 
     private func inlineText(_ inlines: [MarkdownInline]) -> Text {
-        inlines.reduce(Text("")) { partial, inline in
-            partial + text(for: inline)
+        Text(attributedString(for: inlines))
+    }
+
+    private func attributedString(for inlines: [MarkdownInline]) -> AttributedString {
+        var result = AttributedString()
+        for inline in inlines {
+            result.append(attributedString(for: inline))
+        }
+        return result
+    }
+
+    private func attributedString(for inline: MarkdownInline) -> AttributedString {
+        switch inline {
+        case .text(let value):
+            return AttributedString(value)
+        case .emphasis(let children):
+            var string = attributedString(for: children)
+            addIntent(.emphasized, to: &string)
+            return string
+        case .strong(let children):
+            var string = attributedString(for: children)
+            addIntent(.stronglyEmphasized, to: &string)
+            return string
+        case .inlineCode(let code):
+            var string = AttributedString(code)
+            string.inlinePresentationIntent = .code
+            return string
+        case .link(let destination, let children):
+            var string = attributedString(for: children)
+            applyLink(destination, to: &string)
+            return string
+        case .lineBreak:
+            return AttributedString("\n")
         }
     }
 
-    private func text(for inline: MarkdownInline) -> Text {
-        switch inline {
-        case .text(let value):
-            return Text(value)
-        case .emphasis(let children):
-            return inlineText(children).italic()
-        case .strong(let children):
-            return inlineText(children).bold()
-        case .inlineCode(let code):
-            return Text(code)
-                .font(.system(.body, design: .monospaced))
-        case .link(_, let children):
-            return inlineText(children)
-                .foregroundColor(.accentColor)
-                .underline()
-        case .lineBreak:
-            return Text("\n")
+    private func addIntent(_ intent: InlinePresentationIntent, to string: inout AttributedString) {
+        let snapshot = string.runs.map { ($0.range, $0.inlinePresentationIntent ?? []) }
+        for (range, existing) in snapshot {
+            string[range].inlinePresentationIntent = existing.union(intent)
+        }
+    }
+
+    private func applyLink(_ destination: String?, to string: inout AttributedString) {
+        guard let trimmed = destination?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty,
+              let url = URL(string: trimmed) else {
+            return
+        }
+        let ranges = string.runs.map(\.range)
+        for range in ranges {
+            string[range].link = url
+            string[range].foregroundColor = .accentColor
+            string[range].underlineStyle = .single
         }
     }
 }
