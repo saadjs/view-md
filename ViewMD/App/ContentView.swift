@@ -43,9 +43,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(nil)
-        .onReceive(NotificationCenter.default.publisher(for: .viewMDOpenDocument)) { _ in
-            openDocument()
-        }
+        .focusedSceneValue(\.openDocumentAction, openDocument)
         .onReceive(NotificationCenter.default.publisher(for: .viewMDOpenURLs)) { notification in
             guard let urls = notification.object as? [URL] else {
                 return
