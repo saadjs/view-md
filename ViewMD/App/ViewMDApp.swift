@@ -10,6 +10,7 @@ struct ViewMDApp: App {
             ContentView()
                 .frame(minWidth: 520, minHeight: 360)
         }
+        .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open...") {

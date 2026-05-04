@@ -6,8 +6,11 @@ import ViewMDCore
 struct ContentView: View {
     @State private var document: MarkdownPreviewDocument?
     @State private var errorMessage: String?
+    @AppStorage(ExternalEditorPreferences.preferredBundleIdentifierKey)
+    private var preferredEditorBundleIdentifier: String?
 
     private let loader = MarkdownDocumentLoader()
+    private let editorLauncher = ExternalEditorLauncher()
 
     var body: some View {
         Group {
@@ -32,6 +35,13 @@ struct ContentView: View {
             }
         }
         .navigationTitle(document?.displayName ?? "ViewMD")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if let sourceURL = document?.sourceURL {
+                    editorMenu(for: sourceURL)
+                }
+            }
+        }
         .preferredColorScheme(nil)
         .onReceive(NotificationCenter.default.publisher(for: .viewMDOpenDocument)) { _ in
             openDocument()
@@ -60,6 +70,38 @@ struct ContentView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    @ViewBuilder
+    private func editorMenu(for sourceURL: URL) -> some View {
+        let installedEditors = editorLauncher.installedEditors()
+        let preferredEditor = ExternalEditorCatalog.preferredEditor(
+            bundleIdentifier: preferredEditorBundleIdentifier,
+            installedEditors: installedEditors
+        )
+
+        Menu {
+            ForEach(installedEditors) { editor in
+                Button {
+                    open(sourceURL, in: editor, rememberPreference: true)
+                } label: {
+                    if editor.bundleIdentifier == preferredEditor?.bundleIdentifier {
+                        Label(editor.name, systemImage: "checkmark")
+                    } else {
+                        Text(editor.name)
+                    }
+                }
+            }
+
+            if installedEditors.isEmpty {
+                Button("Open with Default App") {
+                    openWithDefaultApplication(sourceURL)
+                }
+            }
+        } label: {
+            Label("Open in Editor", systemImage: "square.and.pencil")
+        }
+        .help("Open in Editor")
     }
 
     private func openDocument() {
@@ -94,6 +136,34 @@ struct ContentView: View {
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func open(
+        _ sourceURL: URL,
+        in editor: ExternalEditor,
+        rememberPreference: Bool
+    ) {
+        if rememberPreference {
+            preferredEditorBundleIdentifier = editor.bundleIdentifier
+        }
+
+        Task { @MainActor in
+            do {
+                try await editorLauncher.open(sourceURL, in: editor)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func openWithDefaultApplication(_ sourceURL: URL) {
+        Task { @MainActor in
+            do {
+                try await editorLauncher.openWithDefaultApplication(sourceURL)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }
