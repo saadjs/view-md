@@ -96,7 +96,7 @@ public struct MarkdownPreviewView: View {
                     Text(marker(for: item, index: index, orderedStart: orderedStart))
                         .font(.body.monospacedDigit())
                         .foregroundStyle(.secondary)
-                        .frame(width: orderedStart == nil ? 14 : 28, alignment: .trailing)
+                        .frame(width: markerWidth(for: item, orderedStart: orderedStart), alignment: .trailing)
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(Array(item.blocks.enumerated()), id: \.offset) { _, block in
                             blockView(block)
@@ -115,6 +115,13 @@ public struct MarkdownPreviewView: View {
             return "\(orderedStart + UInt(index))."
         }
         return "•"
+    }
+
+    private func markerWidth(for item: MarkdownListItem, orderedStart: UInt?) -> CGFloat {
+        if item.checkbox != nil || orderedStart != nil {
+            return 28
+        }
+        return 14
     }
 
     private func headingFont(for level: Int) -> Font {
